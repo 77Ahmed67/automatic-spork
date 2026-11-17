@@ -1,0 +1,1932 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System | إدارة الحضور والاشتراكات والتسميعات</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        html, body {
+            width: 100%;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            font-family: 'Cairo', sans-serif;
+            background-color: #0b1120;
+            color: #f1f5f9;
+        }
+        ::-webkit-scrollbar {
+            width: 7px;
+            height: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.7);
+        }
+        .splash-fade-out {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.45s ease-out;
+        }
+        .page-entry {
+            opacity: 0;
+            transform: translateY(18px);
+            animation: pageEntry 0.6s cubic-bezier(0.22, 1, 0.36, 1) var(--entry-delay, 0ms) both;
+        }
+        .login-enter {
+            animation: overlayFadeIn 0.35s ease-out both;
+        }
+        .login-enter > .glass-card {
+            animation: pageEntry 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        @keyframes overlayFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes pageEntry {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .page-entry,
+            .login-enter,
+            .login-enter > .glass-card {
+                opacity: 1;
+                transform: none;
+                animation: none;
+            }
+        }
+        input[type="month"]::-webkit-calendar-picker-indicator,
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="w-full min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+    <!-- ==================== SPLASH SCREEN ==================== -->
+    <div id="splash-screen" class="fixed inset-0 z-50 bg-[#070b14] flex flex-col items-center justify-center p-6 pointer-events-none select-none">
+        <div class="relative flex flex-col items-center text-center max-w-md">
+            <!-- Glowing Logo -->
+            <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-indigo-600 via-blue-600 to-violet-700 flex items-center justify-center shadow-[0_0_50px_rgba(79,70,229,0.45)] border border-indigo-400/30 mb-6 animate-pulse">
+                <span class="text-5xl font-black text-white tracking-tighter">S</span>
+            </div>
+            <h1 class="text-4xl sm:text-5xl font-black text-white tracking-tight mb-2">System</h1>
+            <p class="text-base sm:text-lg text-slate-300 font-semibold mb-4">نظام إدارة الحضور والاشتراكات والتسميعات</p>
+            <div class="px-4 py-1.5 rounded-full bg-indigo-950/80 border border-indigo-500/30 text-indigo-300 text-xs font-bold tracking-wider">
+                created by Ahmed elgaria
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== LOGIN SCREEN ==================== -->
+    <div id="login-screen" class="fixed inset-0 z-40 bg-[#070b14]/95 backdrop-blur-xl hidden items-center justify-center p-4">
+        <div class="glass-card rounded-3xl max-w-md w-full p-7 sm:p-8 shadow-2xl border border-slate-700/80">
+            <div class="flex flex-col items-center text-center mb-6">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-600 flex items-center justify-center shadow-lg shadow-indigo-600/30 border border-indigo-400/20 mb-3">
+                    <i class="fas fa-lock text-2xl text-white"></i>
+                </div>
+                <h2 class="text-2xl font-black text-white">تسجيل الدخول للنظام</h2>
+                <p class="text-xs text-slate-400 mt-1 font-semibold">أدخل اسم المستخدم وكلمة المرور للمتابعة</p>
+            </div>
+
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1.5">الاسم</label>
+                    <div class="relative">
+                        <i class="fas fa-user absolute right-3.5 top-3.5 text-slate-500 text-xs"></i>
+                        <input type="text" id="login-username" required placeholder="أدخل الاسم..." class="w-full pr-9 pl-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1.5">كلمة المرور</label>
+                    <div class="relative">
+                        <i class="fas fa-key absolute right-3.5 top-3.5 text-slate-500 text-xs"></i>
+                        <input type="password" id="login-password" required placeholder="أدخل كلمة المرور..." class="w-full pr-9 pl-10 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                        <button type="button" onclick="togglePasswordVisibility('login-password', this)" class="absolute left-3 top-3 text-slate-400 hover:text-white text-xs">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <p id="login-error" class="hidden text-xs text-rose-400 font-bold bg-rose-500/10 border border-rose-500/30 rounded-xl px-3 py-2 text-center"></p>
+
+                <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-extrabold shadow-lg shadow-indigo-600/25 transition flex items-center justify-center gap-2 mt-2">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>دخول</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 left-5 z-50 flex flex-col gap-2"></div>
+
+    <!-- ==================== HEADER ==================== -->
+    <header class="w-full bg-[#0f172a]/95 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md">
+        <div class="w-full px-4 py-3.5 sm:px-6 lg:px-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <!-- Brand -->
+                <div class="flex items-center gap-3.5">
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-600 flex items-center justify-center shadow-lg shadow-indigo-600/20 border border-indigo-400/20 shrink-0">
+                        <span class="text-2xl font-black text-white">S</span>
+                    </div>
+                    <div>
+                        <h1 class="text-base sm:text-xl font-extrabold text-white flex flex-wrap items-center gap-2">
+                            <span>System</span>
+                            <span class="text-slate-600">|</span>
+                            <span class="text-slate-100">إدارة الحضور والاشتراكات والتسميعات</span>
+                        </h1>
+                        <p class="text-xs text-emerald-400 font-medium flex flex-wrap items-center gap-2 mt-0.5">
+                            <span class="flex items-center gap-1"><i class="fab fa-whatsapp text-sm"></i> بوت تقارير أولياء الأمور</span>
+                            <span class="text-slate-600">•</span>
+                            <span class="text-indigo-300 font-bold flex items-center gap-1"><i class="fas fa-user-tie"></i> <span id="header-teacher-name">مستر هاني الصاوي</span></span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Controls: Month, Date, Backup -->
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <div class="flex items-center gap-2 bg-slate-900 border border-slate-700/80 px-3 py-1.5 rounded-xl">
+                        <label for="selected-month" class="text-xs text-slate-400 font-bold">الشهر:</label>
+                        <input type="month" id="selected-month" class="bg-transparent text-white text-xs sm:text-sm font-bold focus:outline-none">
+                    </div>
+
+                    <div class="flex items-center gap-2 bg-slate-900 border border-slate-700/80 px-3 py-1.5 rounded-xl">
+                        <label for="selected-date" class="text-xs text-slate-400 font-bold">التاريخ:</label>
+                        <input type="date" id="selected-date" class="bg-transparent text-white text-xs sm:text-sm font-bold focus:outline-none">
+                    </div>
+
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="openChangePasswordModal()" title="تغيير كلمة المرور" class="px-3 py-2 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                            <i class="fas fa-key"></i>
+                            <span class="hidden sm:inline">كلمة المرور</span>
+                        </button>
+                        <button onclick="toggleFullscreen()" id="fullscreen-btn" title="تبديل وضع ملء الشاشة" class="px-3 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                            <i id="fullscreen-icon" class="fas fa-expand"></i>
+                            <span class="hidden sm:inline" id="fullscreen-label">ملء الشاشة</span>
+                        </button>
+                        <button onclick="exportBackup()" title="تصدير نسخة احتياطية" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                            <i class="fas fa-download text-indigo-400"></i>
+                            <span class="hidden sm:inline">تصدير</span>
+                        </button>
+                        <label title="استيراد نسخة احتياطية" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
+                            <i class="fas fa-upload text-emerald-400"></i>
+                            <span class="hidden sm:inline">استيراد</span>
+                            <input type="file" accept=".json" class="hidden" onchange="importBackup(event)">
+                        </label>
+                        <button onclick="logoutSystem()" title="قفل وتسجيل الخروج" class="px-3 py-2 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <main class="flex-grow w-full px-4 py-5 sm:px-6 lg:px-8 space-y-5">
+
+        <!-- 4 Stat Cards -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Card 1 -->
+            <div class="glass-card stat-card rounded-2xl p-5 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-bold text-slate-400 mb-1">إجمالي المسجلين</p>
+                    <h3 id="stat-total" class="text-3xl font-black text-white">0</h3>
+                    <p class="text-[11px] text-indigo-400 mt-1 font-semibold">جميع المراحل والمجموعات</p>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="glass-card stat-card rounded-2xl p-5 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-bold text-slate-400 mb-1">حضور التاريخ المحدد</p>
+                    <h3 id="stat-attendance" class="text-3xl font-black text-sky-400">0</h3>
+                    <p id="stat-attendance-sub" class="text-[11px] text-slate-400 mt-1 font-semibold">حاضر: 0 • متأخر: 0 • غائب: 0</p>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center text-xl">
+                    <i class="fas fa-user-check"></i>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="glass-card stat-card rounded-2xl p-5 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-bold text-slate-400 mb-1">سددوا اشتراك الشهر</p>
+                    <h3 id="stat-paid" class="text-3xl font-black text-emerald-400">0</h3>
+                    <p id="stat-paid-amount" class="text-[11px] text-emerald-400/90 mt-1 font-bold">الإجمالي: 0 ج.م</p>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="glass-card stat-card rounded-2xl p-5 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-bold text-slate-400 mb-1">لم يسددوا الاشتراك</p>
+                    <h3 id="stat-unpaid" class="text-3xl font-black text-rose-400">0</h3>
+                    <p id="stat-unpaid-amount" class="text-[11px] text-rose-400/90 mt-1 font-bold">المتبقي: 0 ج.م</p>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-xl">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- Add Student / Member Card -->
+        <section class="glass-card rounded-2xl p-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                <h2 class="text-base font-extrabold text-white flex items-center gap-2">
+                    <i class="fas fa-user-plus text-indigo-400"></i>
+                    <span>إضافة طالب / عضو جديد</span>
+                </h2>
+                <button type="button" onclick="openGroupsModal()" class="text-xs text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1.5 self-start sm:self-auto">
+                    <i class="fas fa-layer-group"></i>
+                    <span>+ إضافة مجموعة مخصصة</span>
+                </button>
+            </div>
+
+            <form id="add-student-form" onsubmit="handleAddStudent(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+                <div class="lg:col-span-3">
+                    <input type="text" id="new-name" required placeholder="اسم الطالب بالكامل *" class="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="lg:col-span-2">
+                    <input type="tel" id="new-parent-phone" required placeholder="واتساب ولي الأمر *" class="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="lg:col-span-3">
+                    <select id="new-group" required class="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500">
+                        <!-- Egyptian Curriculum Groups populated via JS -->
+                    </select>
+                </div>
+                <div class="lg:col-span-2">
+                    <input type="number" id="new-fee" required min="0" value="250" placeholder="قيمة الاشتراك (ج.م)" class="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="lg:col-span-2">
+                    <button type="submit" class="w-full h-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-600/20 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-plus"></i>
+                        <span>إضافة</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Main Workspace Tabs -->
+        <section class="glass-card rounded-2xl overflow-hidden">
+            <!-- Tabs Header -->
+            <div class="flex flex-wrap items-center justify-between border-b border-slate-800 bg-slate-900/60 px-4">
+                <div class="flex items-center gap-1 overflow-x-auto">
+                    <button id="btn-tab-monthly" onclick="switchTab('monthly')" class="px-5 py-4 text-sm font-extrabold text-indigo-400 border-b-2 border-indigo-500 bg-indigo-500/5 whitespace-nowrap flex items-center gap-2 transition">
+                        <i class="fas fa-table"></i>
+                        <span>كشف الرصد الشهري</span>
+                    </button>
+                    <button id="btn-tab-exams" onclick="switchTab('exams')" class="px-5 py-4 text-sm font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent whitespace-nowrap flex items-center gap-2 transition">
+                        <i class="fas fa-file-signature"></i>
+                        <span>التسميعات والامتحانات</span>
+                    </button>
+                </div>
+
+                <div class="py-2.5 flex flex-wrap items-center gap-2">
+                    <button onclick="openBulkWaModal()" class="px-3.5 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                        <i class="fab fa-whatsapp"></i>
+                        <span>إرسال تقارير الدرجات للجميع</span>
+                    </button>
+                    <button onclick="openTemplateModal()" class="px-3.5 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                        <i class="fab fa-whatsapp"></i>
+                        <span>تخصيص قالب رسالة الواتساب</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ==================== TAB 1: MONTHLY SHEET ==================== -->
+            <div id="view-monthly" class="p-4 sm:p-6 space-y-5">
+                
+                <!-- Filter Controls -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+                    <div class="md:col-span-4 relative">
+                        <i class="fas fa-search absolute right-3.5 top-3.5 text-slate-500 text-xs"></i>
+                        <input type="text" id="filter-search" oninput="renderMonthlyTable()" placeholder="بحث بالاسم أو رقم ولي الأمر..." class="w-full pr-9 pl-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div class="md:col-span-4">
+                        <select id="filter-group" onchange="renderMonthlyTable(); loadGeneralMonthlyNote();" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500">
+                            <option value="ALL">جميع المراحل والمجموعات</option>
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                    <div class="md:col-span-4">
+                        <select id="filter-sub" onchange="renderMonthlyTable()" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500">
+                            <option value="ALL">جميع حالات الاشتراك</option>
+                            <option value="PAID">سددوا الاشتراك</option>
+                            <option value="UNPAID">لم يسددوا الاشتراك</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Quick Bulk Attendance Bar -->
+                <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-900/80 border border-slate-800 px-4 py-2.5 rounded-xl text-xs">
+                    <div class="text-slate-300 font-semibold">
+                        التاريخ النشط للرصد: <span id="active-date-badge" class="text-indigo-400 font-extrabold mr-1"></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-400">تحضير سريع للمعروضين:</span>
+                        <button onclick="bulkAttendance('present')" class="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-lg font-bold transition">الكل حاضر</button>
+                        <button onclick="bulkAttendance('absent')" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 rounded-lg font-bold transition">الكل غائب</button>
+                    </div>
+                </div>
+
+                <!-- Monthly Table -->
+                <div class="overflow-x-auto rounded-xl border border-slate-800">
+                    <table class="w-full text-right border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900 text-slate-400 text-xs border-b border-slate-800">
+                                <th class="py-3.5 px-3 font-bold">#</th>
+                                <th class="py-3.5 px-3 font-bold">بيانات الطالب / ولي الأمر</th>
+                                <th class="py-3.5 px-3 font-bold">المجموعة</th>
+                                <th class="py-3.5 px-3 font-bold">حالة الاشتراك</th>
+                                <th class="py-3.5 px-3 font-bold text-center">رصد حضور اليوم المحدد</th>
+                                <th class="py-3.5 px-3 font-bold">ملخص الشهر والدرجات وملاحظة نهاية الشهر</th>
+                                <th class="py-3.5 px-3 font-bold text-center">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="monthly-table-body" class="divide-y divide-slate-800/80 text-sm bg-slate-950/40">
+                            <!-- Rows injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- End of Month General Notes Box -->
+                <div class="bg-slate-900/90 border border-indigo-500/30 rounded-2xl p-4 sm:p-5 space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center">
+                                <i class="fas fa-clipboard-check"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm sm:text-base font-extrabold text-white">ملاحظات نهاية الشهر العامة</h3>
+                                <p class="text-xs text-slate-400">تُحفظ لشهر <span id="general-note-label" class="text-indigo-400 font-bold"></span> وتُضاف تلقائياً لتقارير أولياء الأمور</p>
+                            </div>
+                        </div>
+                        <button onclick="saveGeneralMonthlyNote()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 self-start sm:self-auto">
+                            <i class="fas fa-save"></i>
+                            <span>حفظ ملاحظات نهاية الشهر</span>
+                        </button>
+                    </div>
+                    <textarea id="general-monthly-note" rows="3" placeholder="اكتب هنا ملاحظات نهاية الشهر العامة للمجموعة أو المرحلة الدراسية (مستوى الطلاب، ما تم إنجازه في المنهج، تنبيهات الشهر القادم...)" class="w-full p-3.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"></textarea>
+                </div>
+
+            </div>
+
+            <!-- ==================== TAB 2: EXAMS & RECITATIONS ==================== -->
+            <div id="view-exams" class="hidden p-4 sm:p-6 space-y-6">
+                
+                <!-- Create Exam Form -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5">
+                    <h3 class="text-sm sm:text-base font-extrabold text-white mb-3.5 flex items-center gap-2">
+                        <i class="fas fa-plus-circle text-indigo-400"></i>
+                        <span>إنشاء تسميع أو امتحان جديد</span>
+                    </h3>
+                    <form onsubmit="handleCreateExam(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+                        <div class="lg:col-span-4">
+                            <input type="text" id="exam-title" required placeholder="عنوان التسميع أو الامتحان *" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div class="lg:col-span-4">
+                            <select id="exam-group" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500">
+                                <option value="ALL">جميع المراحل والمجموعات</option>
+                                <!-- Populated via JS -->
+                            </select>
+                        </div>
+                        <div class="lg:col-span-2">
+                            <input type="number" id="exam-max" required min="1" value="20" placeholder="الدرجة العظمى" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div class="lg:col-span-2">
+                            <button type="submit" class="w-full h-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-bold transition flex items-center justify-center gap-1.5">
+                                <i class="fas fa-check"></i>
+                                <span>إنشاء</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Grade Recording Section -->
+                <div class="space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-3 flex-grow">
+                            <label for="active-exam-select" class="text-sm font-extrabold text-white whitespace-nowrap">
+                                <i class="fas fa-pen-alt text-indigo-400 ml-1.5"></i>رصد الدرجات:
+                            </label>
+                            <select id="active-exam-select" onchange="renderExamTable()" class="w-full sm:max-w-md px-3.5 py-2 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white font-semibold focus:outline-none focus:border-indigo-500">
+                                <!-- Populated via JS -->
+                            </select>
+                        </div>
+                        <button id="btn-delete-exam" onclick="deleteCurrentExam()" class="hidden px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold transition items-center gap-1.5 self-start sm:self-auto">
+                            <i class="fas fa-trash-alt"></i>
+                            <span>حذف الامتحان</span>
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-xl border border-slate-800">
+                        <table class="w-full text-right border-collapse">
+                            <thead>
+                                <tr class="bg-slate-900 text-slate-400 text-xs border-b border-slate-800">
+                                    <th class="py-3.5 px-4 font-bold">#</th>
+                                    <th class="py-3.5 px-4 font-bold">اسم الطالب</th>
+                                    <th class="py-3.5 px-4 font-bold">المجموعة</th>
+                                    <th class="py-3.5 px-4 font-bold w-44">الدرجة</th>
+                                    <th class="py-3.5 px-4 font-bold">النسبة والتقدير</th>
+                                </tr>
+                            </thead>
+                            <tbody id="exam-table-body" class="divide-y divide-slate-800/80 text-sm bg-slate-950/40">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="w-full border-t border-slate-800/80 bg-[#090e1a] py-4 mt-8">
+        <div class="w-full px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
+            <p>نظام إدارة الحضور والاشتراكات والتسميعات وتقارير أولياء الأمور</p>
+            <p class="font-extrabold text-indigo-400 tracking-wide">System — creat of Ahmed elgaria</p>
+        </div>
+    </footer>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- 1. Edit Student Modal -->
+    <div id="edit-student-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+                    <i class="fas fa-user-edit text-indigo-400"></i>
+                    <span>تعديل بيانات الطالب</span>
+                </h3>
+                <button onclick="closeModal('edit-student-modal')" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <form onsubmit="handleUpdateStudent(event)" class="p-6 space-y-4">
+                <input type="hidden" id="edit-id">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">اسم الطالب</label>
+                    <input type="text" id="edit-name" required class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">رقم واتساب ولي الأمر</label>
+                    <input type="tel" id="edit-parent-phone" required class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">المجموعة / المرحلة الدراسية</label>
+                    <select id="edit-group" required class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">قيمة الاشتراك الشهري (ج.م)</label>
+                    <input type="number" id="edit-fee" required min="0" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="pt-3 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('edit-student-modal')" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold">إلغاء</button>
+                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold">حفظ التعديلات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. Student Comprehensive Record Modal -->
+    <div id="record-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl my-8">
+            <div class="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+                        <i class="fas fa-id-card text-indigo-400"></i>
+                        <span>سجل الطالب الشامل</span>
+                    </h3>
+                    <p id="record-subtitle" class="text-xs text-slate-400 mt-0.5"></p>
+                </div>
+                <button onclick="closeModal('record-modal')" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+                
+                <!-- Attendance Stats -->
+                <div class="grid grid-cols-3 gap-3 text-center">
+                    <div class="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl">
+                        <p class="text-xs text-emerald-400 font-bold">حضور</p>
+                        <p id="rec-present" class="text-2xl font-black text-white mt-0.5">0</p>
+                    </div>
+                    <div class="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl">
+                        <p class="text-xs text-amber-400 font-bold">تأخير</p>
+                        <p id="rec-late" class="text-2xl font-black text-white mt-0.5">0</p>
+                    </div>
+                    <div class="bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl">
+                        <p class="text-xs text-rose-400 font-bold">غياب</p>
+                        <p id="rec-absent" class="text-2xl font-black text-white mt-0.5">0</p>
+                    </div>
+                </div>
+
+                <!-- Student End-of-Month Note -->
+                <div class="bg-slate-950 border border-indigo-500/30 rounded-xl p-4 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-extrabold text-indigo-400 flex items-center gap-1.5">
+                            <i class="fas fa-sticky-note"></i>
+                            <span>ملاحظات نهاية الشهر للطالب (تُرسل لولي الأمر):</span>
+                        </label>
+                        <span id="rec-month-tag" class="text-[11px] px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold"></span>
+                    </div>
+                    <textarea id="rec-student-note" rows="3" placeholder="اكتب ملاحظات تقييم الطالب في نهاية الشهر..." class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"></textarea>
+                    <div class="flex justify-end">
+                        <button onclick="saveRecordStudentNote()" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition">
+                            حفظ ملاحظة الطالب
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Exams List -->
+                <div>
+                    <h4 class="text-xs font-extrabold text-slate-300 mb-2">درجات التسميعات والامتحانات في الشهر:</h4>
+                    <div id="rec-exams-list" class="bg-slate-950 border border-slate-800 rounded-xl divide-y divide-slate-800 text-xs"></div>
+                </div>
+
+                <!-- Dates Log -->
+                <div>
+                    <h4 class="text-xs font-extrabold text-slate-300 mb-2">سجل تواريخ الحضور والغياب:</h4>
+                    <div id="rec-dates-list" class="flex flex-wrap gap-1.5"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. WhatsApp Parent Report Bot Modal -->
+    <div id="wa-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl my-8">
+            <div class="px-6 py-4 bg-emerald-950/60 border-b border-emerald-800/40 flex items-center justify-between">
+                <h3 class="text-base font-extrabold text-emerald-400 flex items-center gap-2">
+                    <i class="fab fa-whatsapp text-xl"></i>
+                    <span>بوت تقارير أولياء الأمور الشهرية</span>
+                </h3>
+                <button onclick="closeModal('wa-modal')" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="flex items-center justify-between text-xs bg-slate-950 border border-slate-800 px-3.5 py-2.5 rounded-xl">
+                    <span class="text-slate-300">الطالب: <strong id="wa-name" class="text-white"></strong></span>
+                    <span class="text-slate-300">ولي الأمر: <strong id="wa-phone" class="text-emerald-400" dir="ltr"></strong></span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1.5">نص التقرير الشهري الجاهز للإرسال:</label>
+                    <textarea id="wa-preview-text" rows="11" class="w-full p-3.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-slate-100 leading-relaxed focus:outline-none focus:border-emerald-500"></textarea>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                    <button onclick="sendWhatsAppNow()" class="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-bold transition flex items-center justify-center gap-2">
+                        <i class="fab fa-whatsapp text-lg"></i>
+                        <span>إرسال عبر واتساب</span>
+                    </button>
+                    <button onclick="copyWaMessage()" class="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1.5">
+                        <i class="far fa-copy"></i>
+                        <span>نسخ</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk WhatsApp Reports Modal -->
+    <div id="wa-bulk-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl my-8">
+            <div class="px-6 py-4 bg-emerald-950/60 border-b border-emerald-800/40 flex items-center justify-between">
+                <h3 class="text-base font-extrabold text-emerald-400 flex items-center gap-2">
+                    <i class="fab fa-whatsapp text-xl"></i>
+                    <span>تقارير الدرجات لأولياء الأمور</span>
+                </h3>
+                <button onclick="closeModal('wa-bulk-modal')" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    سيتم تجهيز تقرير مخصص لكل طالب وفتح محادثة ولي أمره بالتتابع. اضغط إرسال داخل واتساب لكل رسالة، ثم ارجع هنا للانتقال إلى ولي الأمر التالي. لا تُرسل الرسائل تلقائياً من المتصفح.
+                </p>
+                <div id="wa-bulk-status" class="text-xs font-bold text-indigo-300 bg-slate-950 border border-slate-800 px-3.5 py-2.5 rounded-xl"></div>
+                <div id="wa-bulk-current" class="text-xs text-slate-300 bg-slate-950 border border-slate-800 px-3.5 py-2.5 rounded-xl"></div>
+                <textarea id="wa-bulk-preview" rows="11" readonly class="w-full p-3.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-slate-100 leading-relaxed focus:outline-none"></textarea>
+                <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                    <button id="wa-bulk-open-btn" onclick="openNextBulkWhatsApp()" class="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-bold transition flex items-center justify-center gap-2">
+                        <i class="fab fa-whatsapp text-lg"></i>
+                        <span>فتح واتساب للطالب الحالي</span>
+                    </button>
+                    <button id="wa-bulk-skip-btn" onclick="skipBulkWhatsApp()" class="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-sm font-bold transition">تخطي الطالب</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Customize WhatsApp Template Modal -->
+    <div id="template-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+                    <i class="fab fa-whatsapp text-emerald-400"></i>
+                    <span>تخصيص قالب رسالة الواتساب</span>
+                </h3>
+                <button onclick="closeModal('template-modal')" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    المتغيرات المتاحة: <code class="text-indigo-400">{student}</code> ، <code class="text-indigo-400">{group}</code> ، <code class="text-indigo-400">{month}</code> ، <code class="text-indigo-400">{present}</code> ، <code class="text-indigo-400">{late}</code> ، <code class="text-indigo-400">{absent}</code> ، <code class="text-indigo-400">{subscription}</code> ، <code class="text-indigo-400">{exams}</code> ، <code class="text-indigo-400">{notes}</code>
+                </p>
+                <textarea id="wa-template-input" rows="10" class="w-full p-3.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white leading-relaxed focus:outline-none focus:border-indigo-500"></textarea>
+                <div class="flex justify-between items-center pt-2">
+                    <button type="button" onclick="resetWaTemplate()" class="text-xs text-rose-400 hover:underline font-bold">استعادة القالب الافتراضي</button>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="closeModal('template-modal')" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold">إلغاء</button>
+                        <button type="button" onclick="saveWaTemplate()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold">حفظ القالب</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Custom Groups Modal -->
+    <div id="groups-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                <h3 class="text-base font-extrabold text-white">إضافة مجموعة مخصصة</h3>
+                <button onclick="closeModal('groups-modal')" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <form onsubmit="handleAddCustomGroup(event)" class="flex gap-2">
+                    <input type="text" id="custom-group-input" required placeholder="مثال: مجموعة السبت والثلاثاء..." class="flex-grow px-3.5 py-2 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500">
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold">إضافة</button>
+                </form>
+                <div id="custom-groups-list" class="max-h-48 overflow-y-auto divide-y divide-slate-800 border border-slate-800 rounded-xl"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Change Password Modal -->
+    <div id="change-password-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+                    <i class="fas fa-key text-amber-400"></i>
+                    <span>تغيير بيانات الدخول وكلمة المرور</span>
+                </h3>
+                <button onclick="closeModal('change-password-modal')" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <form onsubmit="handleChangePassword(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">الاسم</label>
+                    <input type="text" id="cp-username" required class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">كلمة المرور الحالية *</label>
+                    <input type="password" id="cp-old-password" required placeholder="أدخل كلمة المرور الحالية..." class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">كلمة المرور الجديدة *</label>
+                    <input type="password" id="cp-new-password" required placeholder="أدخل كلمة المرور الجديدة..." class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">تأكيد كلمة المرور الجديدة *</label>
+                    <input type="password" id="cp-confirm-password" required placeholder="أعد إدخال كلمة المرور الجديدة..." class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('change-password-modal')" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold">إلغاء</button>
+                    <button type="submit" class="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold">حفظ التغييرات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== JAVASCRIPT ==================== -->
+    <script>
+        const STORAGE_KEY = 'system_ahmed_elgaria_v3';
+        const LOGIN_SESSION_KEY = 'system_ahmed_elgaria_logged_in';
+        const DEFAULT_AUTH = {
+            username: "مستر هاني الصاوي",
+            password: "1102010"
+        };
+
+        const EGYPT_STAGES_GROUPED = [
+            {
+                category: "المرحلة الإعدادية",
+                items: [
+                    "الصف الأول الإعدادي",
+                    "الصف الثاني الإعدادي",
+                    "الصف الثالث الإعدادي"
+                ]
+            },
+            {
+                category: "نظام البكالوريا المصرية الجديد",
+                items: [
+                    "الصف الأول البكالوريا المصرية (المرحلة التمهيدية)",
+                    "الصف الثاني البكالوريا المصرية (مسار الطب وعلوم الحياة)",
+                    "الصف الثاني البكالوريا المصرية (مسار الهندسة وعلوم الحاسب)",
+                    "الصف الثاني البكالوريا المصرية (مسار الأعمال)",
+                    "الصف الثاني البكالوريا المصرية (مسار الآداب والفنون)"
+                ]
+            },
+            {
+                category: "الثانوية العامة (النظام الحالي)",
+                items: [
+                    "الصف الثالث الثانوي - علمي علوم",
+                    "الصف الثالث الثانوي - علمي رياضة",
+                    "الصف الثالث الثانوي - أدبي"
+                ]
+            }
+        ];
+
+        const EGYPT_STAGES = EGYPT_STAGES_GROUPED.flatMap(g => g.items);
+
+        const MONTHS_AR = {
+            "01": "يناير", "02": "فبراير", "03": "مارس", "04": "أبريل",
+            "05": "مايو", "06": "يونيو", "07": "يوليو", "08": "أغسطس",
+            "09": "سبتمبر", "10": "أكتوبر", "11": "نوفمبر", "12": "ديسمبر"
+        };
+
+        const DEFAULT_WA_TEMPLATE = `السلام عليكم ورحمة الله وبركاته
+ولي أمر الطالب/ة: *{student}*
+المرحلة / المجموعة: *{group}*
+
+📊 *التقرير الشهري عن شهر ({month}):*
+• أيام الحضور: *{present}*
+• أيام التأخير: *{late}*
+• أيام الغياب: *{absent}*
+• حالة الاشتراك الشهري: *{subscription}*
+
+📝 *نتائج التسميعات والامتحانات:*
+{exams}
+{notes}
+مع أطيب التمنيات بالتوفيق والنجاح الدائم.`;
+
+        let state = {
+            students: [],
+            attendance: {},
+            subscriptions: {},
+            exams: [],
+            customGroups: [],
+            studentNotes: {},
+            generalNotes: {},
+            waTemplate: DEFAULT_WA_TEMPLATE,
+            auth: { ...DEFAULT_AUTH }
+        };
+
+        let activeRecordStudentId = null;
+        let activeWaPhone = "";
+        let bulkWaQueue = [];
+        let bulkWaIndex = 0;
+        let bulkWaOpened = 0;
+        let bulkWaSkipped = 0;
+        let bulkWaInvalidCount = 0;
+
+        // ==================== INIT & AUTO FULLSCREEN ====================
+        window.onload = function() {
+            loadState();
+            updateHeaderTeacherName();
+            initDateInputs();
+            populateGroupSelects();
+            refreshUI();
+            setupAutoFullscreen();
+
+            // ظهور شاشة الدخول الترحيبية لفترة قصيرة (1.5 ثانية) ثم الانتقال لشاشة تسجيل الدخول
+            setTimeout(() => {
+                dismissSplash(false);
+                if (sessionStorage.getItem(LOGIN_SESSION_KEY) !== 'true') {
+                    showLoginScreen();
+                }
+            }, 1500);
+        };
+
+        // ==================== FULLSCREEN HELPERS ====================
+        function enterFullscreenSafe() {
+            try {
+                const el = document.documentElement;
+                if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                    if (el.requestFullscreen) {
+                        el.requestFullscreen().catch(() => {});
+                    } else if (el.webkitRequestFullscreen) {
+                        el.webkitRequestFullscreen();
+                    }
+                }
+            } catch (e) {}
+        }
+
+        function toggleFullscreen() {
+            try {
+                const isFull = document.fullscreenElement || document.webkitFullscreenElement;
+                if (!isFull) {
+                    enterFullscreenSafe();
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen().catch(() => {});
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    }
+                }
+            } catch (e) {}
+        }
+
+        function updateFullscreenButton() {
+            const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
+            const icon = document.getElementById('fullscreen-icon');
+            const label = document.getElementById('fullscreen-label');
+            if (icon) icon.className = isFull ? 'fas fa-compress' : 'fas fa-expand';
+            if (label) label.textContent = isFull ? 'إنهاء ملء الشاشة' : 'ملء الشاشة';
+        }
+
+        function setupAutoFullscreen() {
+            document.addEventListener('fullscreenchange', updateFullscreenButton);
+            document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+            const triggerOnce = () => {
+                enterFullscreenSafe();
+                document.removeEventListener('click', triggerOnce);
+            };
+            document.addEventListener('click', triggerOnce);
+        }
+
+        // ==================== AUTHENTICATION ====================
+        function showLoginScreen() {
+            const loginEl = document.getElementById('login-screen');
+            document.getElementById('login-username').value = '';
+            document.getElementById('login-password').value = '';
+            document.getElementById('login-error').classList.add('hidden');
+            loginEl.classList.remove('hidden');
+            loginEl.classList.add('flex');
+            loginEl.classList.remove('login-enter');
+            void loginEl.offsetWidth;
+            loginEl.classList.add('login-enter');
+            setTimeout(() => document.getElementById('login-username').focus(), 100);
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('login-username').value.trim();
+            const p = document.getElementById('login-password').value.trim();
+            const errEl = document.getElementById('login-error');
+
+            const validUser = (state.auth && state.auth.username) ? state.auth.username : DEFAULT_AUTH.username;
+            const validPass = (state.auth && state.auth.password) ? state.auth.password : DEFAULT_AUTH.password;
+
+            if (u === validUser && p === validPass) {
+                sessionStorage.setItem(LOGIN_SESSION_KEY, 'true');
+                errEl.classList.add('hidden');
+                const loginEl = document.getElementById('login-screen');
+                loginEl.classList.add('hidden');
+                loginEl.classList.remove('flex');
+                animatePageEntry();
+                enterFullscreenSafe();
+                toast(`أهلاً بك يا ${validUser}`, "success");
+            } else {
+                errEl.textContent = "الاسم أو كلمة المرور غير صحيحة، حاول مرة أخرى";
+                errEl.classList.remove('hidden');
+            }
+        }
+
+        function logoutSystem() {
+            sessionStorage.removeItem(LOGIN_SESSION_KEY);
+            showLoginScreen();
+            toast("تم قفل النظام وتسجيل الخروج", "info");
+        }
+
+        function updateHeaderTeacherName() {
+            const nameEl = document.getElementById('header-teacher-name');
+            if (nameEl) {
+                nameEl.textContent = (state.auth && state.auth.username) ? state.auth.username : DEFAULT_AUTH.username;
+            }
+        }
+
+        function openChangePasswordModal() {
+            document.getElementById('cp-username').value = (state.auth && state.auth.username) ? state.auth.username : DEFAULT_AUTH.username;
+            document.getElementById('cp-old-password').value = '';
+            document.getElementById('cp-new-password').value = '';
+            document.getElementById('cp-confirm-password').value = '';
+            openModal('change-password-modal');
+        }
+
+        function handleChangePassword(e) {
+            e.preventDefault();
+            const newUsername = document.getElementById('cp-username').value.trim();
+            const oldPass = document.getElementById('cp-old-password').value.trim();
+            const newPass = document.getElementById('cp-new-password').value.trim();
+            const confirmPass = document.getElementById('cp-confirm-password').value.trim();
+
+            const currentPass = (state.auth && state.auth.password) ? state.auth.password : DEFAULT_AUTH.password;
+
+            if (oldPass !== currentPass) {
+                toast("كلمة المرور الحالية غير صحيحة", "error");
+                return;
+            }
+            if (!newUsername || !newPass) {
+                toast("يرجى إدخال الاسم وكلمة المرور الجديدة", "error");
+                return;
+            }
+            if (newPass !== confirmPass) {
+                toast("كلمة المرور الجديدة وتأكيدها غير متطابقتين", "error");
+                return;
+            }
+
+            state.auth = {
+                username: newUsername,
+                password: newPass
+            };
+            saveState();
+            updateHeaderTeacherName();
+            closeModal('change-password-modal');
+            toast("تم تحديث الاسم وكلمة المرور بنجاح", "success");
+        }
+
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        function animatePageEntry() {
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+            const items = [document.querySelector('header')];
+            document.querySelectorAll('main > section').forEach(section => {
+                const cards = Array.from(section.children).filter(child => child.classList.contains('stat-card'));
+                items.push(...(cards.length ? cards : [section]));
+            });
+            items.push(document.querySelector('footer'));
+
+            const visibleItems = items.filter(Boolean);
+            visibleItems.forEach(item => item.classList.remove('page-entry'));
+            void document.body.offsetHeight;
+            visibleItems.forEach((item, index) => {
+                item.style.setProperty('--entry-delay', `${index * 85}ms`);
+                item.classList.add('page-entry');
+            });
+        }
+
+        function dismissSplash(fromUserClick = false) {
+            if (fromUserClick) {
+                enterFullscreenSafe();
+            }
+            const splash = document.getElementById('splash-screen');
+            if (splash && !splash.classList.contains('splash-fade-out')) {
+                if (sessionStorage.getItem(LOGIN_SESSION_KEY) === 'true') {
+                    animatePageEntry();
+                }
+                splash.classList.add('splash-fade-out');
+                setTimeout(() => splash.style.display = 'none', 450);
+            }
+        }
+
+        function loadState() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                try {
+                    const parsed = JSON.parse(raw);
+                    state = {
+                        ...state,
+                        ...parsed,
+                        students: Array.isArray(parsed.students) ? parsed.students : [],
+                        attendance: parsed.attendance && typeof parsed.attendance === 'object' ? parsed.attendance : {},
+                        subscriptions: parsed.subscriptions && typeof parsed.subscriptions === 'object' ? parsed.subscriptions : {},
+                        exams: Array.isArray(parsed.exams) ? parsed.exams : [],
+                        customGroups: Array.isArray(parsed.customGroups) ? parsed.customGroups : [],
+                        studentNotes: parsed.studentNotes && typeof parsed.studentNotes === 'object' ? parsed.studentNotes : {},
+                        generalNotes: parsed.generalNotes && typeof parsed.generalNotes === 'object' ? parsed.generalNotes : {},
+                        waTemplate: parsed.waTemplate || DEFAULT_WA_TEMPLATE,
+                        auth: parsed.auth && parsed.auth.username && parsed.auth.password ? parsed.auth : { ...DEFAULT_AUTH }
+                    };
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        function initDateInputs() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+
+            const monthEl = document.getElementById('selected-month');
+            const dateEl = document.getElementById('selected-date');
+
+            monthEl.value = `${y}-${m}`;
+            dateEl.value = `${y}-${m}-${d}`;
+
+            monthEl.addEventListener('change', () => {
+                if (monthEl.value && !dateEl.value.startsWith(monthEl.value)) {
+                    dateEl.value = `${monthEl.value}-01`;
+                }
+                refreshUI();
+            });
+
+            dateEl.addEventListener('change', () => {
+                if (dateEl.value) {
+                    monthEl.value = dateEl.value.slice(0, 7);
+                }
+                refreshUI();
+            });
+        }
+
+        function getMonth() { return document.getElementById('selected-month').value; }
+        function getDate() { return document.getElementById('selected-date').value; }
+
+        function formatMonthAr(ym) {
+            if (!ym) return "";
+            const [y, m] = ym.split('-');
+            return `${MONTHS_AR[m] || m} ${y}`;
+        }
+
+        // ==================== GROUPS ====================
+        function getAllGroups() {
+            return [...EGYPT_STAGES, ...state.customGroups];
+        }
+
+        function buildGroupedOptionsHtml() {
+            let html = EGYPT_STAGES_GROUPED.map(section => `
+                <optgroup label="${section.category}" class="bg-slate-900 text-indigo-300 font-bold">
+                    ${section.items.map(item => `<option value="${item}" class="text-white font-normal">${item}</option>`).join('')}
+                </optgroup>
+            `).join('');
+
+            if (state.customGroups.length > 0) {
+                html += `
+                    <optgroup label="مجموعات مخصصة" class="bg-slate-900 text-emerald-300 font-bold">
+                        ${state.customGroups.map(g => `<option value="${g}" class="text-white font-normal">${g}</option>`).join('')}
+                    </optgroup>
+                `;
+            }
+            return html;
+        }
+
+        function populateGroupSelects() {
+            const all = getAllGroups();
+            const groupedHtml = buildGroupedOptionsHtml();
+
+            const selects = ['new-group', 'edit-group'];
+            selects.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.innerHTML = groupedHtml;
+            });
+
+            const filterEl = document.getElementById('filter-group');
+            const prevFilter = filterEl.value;
+            filterEl.innerHTML = `<option value="ALL">جميع المراحل والمجموعات</option>` + groupedHtml;
+            if (all.includes(prevFilter)) filterEl.value = prevFilter;
+
+            const examEl = document.getElementById('exam-group');
+            examEl.innerHTML = `<option value="ALL">جميع المراحل والمجموعات</option>` + groupedHtml;
+
+            renderCustomGroupsList();
+        }
+
+        function openGroupsModal() {
+            renderCustomGroupsList();
+            openModal('groups-modal');
+        }
+
+        function handleAddCustomGroup(e) {
+            e.preventDefault();
+            const input = document.getElementById('custom-group-input');
+            const val = input.value.trim();
+            if (!val) return;
+            if (!getAllGroups().includes(val)) {
+                state.customGroups.push(val);
+                saveState();
+                populateGroupSelects();
+                toast("تمت إضافة المجموعة المخصصة", "success");
+            } else {
+                toast("هذه المجموعة موجودة بالفعل", "info");
+            }
+            input.value = '';
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function renderCustomGroupsList() {
+            const box = document.getElementById('custom-groups-list');
+            if (state.customGroups.length === 0) {
+                box.innerHTML = `<p class="p-3 text-center text-xs text-slate-500">لا توجد مجموعات مخصصة بعد</p>`;
+                return;
+            }
+            box.innerHTML = state.customGroups.map((g, index) => `
+                <div class="flex items-center justify-between px-3.5 py-2.5 text-xs text-slate-200">
+                    <span class="font-bold">${escapeHtml(g)}</span>
+                    <button type="button" onclick="removeCustomGroupByIndex(${index})" class="text-rose-400 hover:text-rose-300"><i class="fas fa-trash"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function removeCustomGroupByIndex(index) {
+            state.customGroups.splice(index, 1);
+            saveState();
+            populateGroupSelects();
+            refreshUI();
+            toast("تم حذف المجموعة المخصصة", "info");
+        }
+
+        // ==================== REFRESH & STATS ====================
+        function refreshUI() {
+            updateStats();
+            renderMonthlyTable();
+            loadGeneralMonthlyNote();
+            populateExamSelect();
+            renderExamTable();
+        }
+
+        function updateStats() {
+            const month = getMonth();
+            const date = getDate();
+            document.getElementById('active-date-badge').textContent = date;
+
+            const total = state.students.length;
+            document.getElementById('stat-total').textContent = total;
+
+            const dayAtt = state.attendance[date] || {};
+            let p = 0, l = 0, a = 0;
+            state.students.forEach(s => {
+                if (dayAtt[s.id] === 'present') p++;
+                else if (dayAtt[s.id] === 'late') l++;
+                else if (dayAtt[s.id] === 'absent') a++;
+            });
+
+            document.getElementById('stat-attendance').textContent = p + l;
+            document.getElementById('stat-attendance-sub').textContent = `حاضر: ${p} • متأخر: ${l} • غائب: ${a}`;
+
+            const subs = state.subscriptions[month] || {};
+            let paidCount = 0, paidSum = 0, unpaidCount = 0, unpaidSum = 0;
+            state.students.forEach(s => {
+                const fee = Number(s.fee) || 0;
+                if (subs[s.id]) {
+                    paidCount++;
+                    paidSum += fee;
+                } else {
+                    unpaidCount++;
+                    unpaidSum += fee;
+                }
+            });
+
+            document.getElementById('stat-paid').textContent = paidCount;
+            document.getElementById('stat-paid-amount').textContent = `الإجمالي: ${paidSum.toLocaleString()} ج.م`;
+            document.getElementById('stat-unpaid').textContent = unpaidCount;
+            document.getElementById('stat-unpaid-amount').textContent = `المتبقي: ${unpaidSum.toLocaleString()} ج.م`;
+        }
+
+        // ==================== MONTHLY TABLE ====================
+        function getFilteredStudents() {
+            const q = document.getElementById('filter-search').value.trim().toLowerCase();
+            const grp = document.getElementById('filter-group').value;
+            const sub = document.getElementById('filter-sub').value;
+            const subs = state.subscriptions[getMonth()] || {};
+
+            return state.students.filter(s => {
+                const matchQ = s.name.toLowerCase().includes(q) || (s.parentPhone && s.parentPhone.includes(q));
+                const matchG = grp === 'ALL' || s.group === grp;
+                const isPaid = !!subs[s.id];
+                const matchS = sub === 'ALL' || (sub === 'PAID' && isPaid) || (sub === 'UNPAID' && !isPaid);
+                return matchQ && matchG && matchS;
+            });
+        }
+
+        function renderMonthlyTable() {
+            const tbody = document.getElementById('monthly-table-body');
+            const list = getFilteredStudents();
+            const month = getMonth();
+            const date = getDate();
+
+            const subs = state.subscriptions[month] || {};
+            const dayAtt = state.attendance[date] || {};
+            const notes = state.studentNotes[month] || {};
+
+            if (list.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="py-12 text-center text-slate-400">
+                            <i class="fas fa-users-slash text-3xl text-slate-600 mb-2 block"></i>
+                            <p class="font-bold text-sm">لا يوجد طلاب مسجلون حالياً</p>
+                            <p class="text-xs text-slate-500 mt-1">أضف طلاباً جدداً من النموذج أعلاه للبدء في رصد الحضور والاشتراكات والتسميعات</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = list.map((s, idx) => {
+                const isPaid = !!subs[s.id];
+                const st = dayAtt[s.id] || '';
+                const studentNote = notes[s.id] || '';
+
+                // Monthly attendance count
+                let mP = 0, mL = 0, mA = 0;
+                Object.keys(state.attendance).forEach(d => {
+                    if (d.startsWith(month)) {
+                        const v = state.attendance[d][s.id];
+                        if (v === 'present') mP++;
+                        else if (v === 'late') mL++;
+                        else if (v === 'absent') mA++;
+                    }
+                });
+
+                // Monthly exams count
+                const mExams = state.exams.filter(ex => ex.month === month && (ex.group === 'ALL' || ex.group === s.group));
+                let gradedCount = 0;
+                mExams.forEach(ex => {
+                    if (ex.scores && ex.scores[s.id] !== undefined && ex.scores[s.id] !== '') gradedCount++;
+                });
+
+                return `
+                    <tr class="hover:bg-slate-900/60 transition">
+                        <td class="py-3.5 px-3 font-bold text-slate-500">${idx + 1}</td>
+                        <td class="py-3.5 px-3">
+                            <div class="font-extrabold text-white">${escapeHtml(s.name)}</div>
+                            <div class="text-xs text-emerald-400/90 mt-0.5 font-medium" dir="ltr" style="text-align:right">
+                                <i class="fab fa-whatsapp mr-2"></i>${escapeHtml(s.parentPhone)}
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-3">
+                            <span class="inline-block px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-bold">
+                                ${escapeHtml(s.group)}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-3">
+                            <button onclick="toggleSub('${s.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 ${isPaid ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25' : 'bg-rose-500/15 text-rose-400 border-rose-500/30 hover:bg-rose-500/25'}">
+                                <i class="fas ${isPaid ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+                                <span>${isPaid ? 'سدد' : 'لم يسدد'} (${s.fee} ج.م)</span>
+                            </button>
+                        </td>
+                        <td class="py-3.5 px-3">
+                            <div class="flex items-center justify-center gap-1">
+                                <button onclick="markAtt('${s.id}', 'present')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold border transition ${st === 'present' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-emerald-400'}">حاضر</button>
+                                <button onclick="markAtt('${s.id}', 'late')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold border transition ${st === 'late' ? 'bg-amber-600 text-white border-amber-500' : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-amber-400'}">متأخر</button>
+                                <button onclick="markAtt('${s.id}', 'absent')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold border transition ${st === 'absent' ? 'bg-rose-600 text-white border-rose-500' : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-rose-400'}">غائب</button>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-3 space-y-1.5">
+                            <div class="text-xs text-slate-300 font-semibold flex flex-wrap gap-2">
+                                <span>حضور: <b class="text-emerald-400">${mP}</b></span>
+                                <span>تأخير: <b class="text-amber-400">${mL}</b></span>
+                                <span>غياب: <b class="text-rose-400">${mA}</b></span>
+                                <span class="text-slate-600">|</span>
+                                <span>تسميعات: <b class="text-indigo-400">${gradedCount}/${mExams.length}</b></span>
+                            </div>
+                            <input type="text" value="${escapeHtml(studentNote)}"
+                                onchange="saveQuickStudentNote('${s.id}', this.value)"
+                                placeholder="ملاحظة نهاية الشهر للطالب..."
+                                class="w-full px-2.5 py-1 bg-slate-900/90 border border-slate-700/80 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                        </td>
+                        <td class="py-3.5 px-3">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <button onclick="openRecordModal('${s.id}')" title="سجل الطالب الشامل وملاحظات الشهر" class="p-2 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-400 rounded-lg transition">
+                                    <i class="fas fa-folder-open"></i>
+                                </button>
+                                <button onclick="openWaModal('${s.id}')" title="إرسال تقرير واتساب" class="p-2 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 rounded-lg transition">
+                                    <i class="fab fa-whatsapp"></i>
+                                </button>
+                                <button onclick="openEditStudent('${s.id}')" title="تعديل" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteStudent('${s.id}')" title="حذف" class="p-2 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 rounded-lg transition">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // ==================== ACTIONS ====================
+        function handleAddStudent(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-name').value.trim();
+            const parentPhone = document.getElementById('new-parent-phone').value.trim();
+            const group = document.getElementById('new-group').value;
+            const fee = Number(document.getElementById('new-fee').value) || 0;
+
+            const student = {
+                id: 's_' + Date.now(),
+                name,
+                parentPhone,
+                group,
+                fee
+            };
+            state.students.push(student);
+            saveState();
+            document.getElementById('new-name').value = '';
+            document.getElementById('new-parent-phone').value = '';
+            refreshUI();
+            toast("تمت إضافة الطالب بنجاح", "success");
+        }
+
+        function toggleSub(id) {
+            const m = getMonth();
+            if (!state.subscriptions[m]) state.subscriptions[m] = {};
+            state.subscriptions[m][id] = !state.subscriptions[m][id];
+            saveState();
+            refreshUI();
+        }
+
+        function markAtt(id, status) {
+            const d = getDate();
+            if (!state.attendance[d]) state.attendance[d] = {};
+            if (state.attendance[d][id] === status) {
+                delete state.attendance[d][id];
+            } else {
+                state.attendance[d][id] = status;
+            }
+            saveState();
+            refreshUI();
+        }
+
+        function bulkAttendance(status) {
+            const d = getDate();
+            const list = getFilteredStudents();
+            if (list.length === 0) return;
+            if (!state.attendance[d]) state.attendance[d] = {};
+            list.forEach(s => state.attendance[d][s.id] = status);
+            saveState();
+            refreshUI();
+            toast("تم تحديث الحضور الجماعي", "success");
+        }
+
+        function saveQuickStudentNote(studentId, val) {
+            const m = getMonth();
+            if (!state.studentNotes[m]) state.studentNotes[m] = {};
+            state.studentNotes[m][studentId] = val.trim();
+            saveState();
+            toast("تم حفظ ملاحظة نهاية الشهر للطالب", "success");
+        }
+
+        function loadGeneralMonthlyNote() {
+            const m = getMonth();
+            const g = document.getElementById('filter-group').value;
+            const label = g === 'ALL' ? 'جميع المراحل' : g;
+            document.getElementById('general-note-label').textContent = `${formatMonthAr(m)} (${label})`;
+            document.getElementById('general-monthly-note').value = state.generalNotes[`${m}_${g}`] || '';
+        }
+
+        function saveGeneralMonthlyNote() {
+            const m = getMonth();
+            const g = document.getElementById('filter-group').value;
+            state.generalNotes[`${m}_${g}`] = document.getElementById('general-monthly-note').value.trim();
+            saveState();
+            toast("تم حفظ ملاحظات نهاية الشهر العامة بنجاح", "success");
+        }
+
+        // ==================== EDIT & DELETE STUDENT ====================
+        function openEditStudent(id) {
+            const s = state.students.find(x => x.id === id);
+            if (!s) return;
+            document.getElementById('edit-id').value = s.id;
+            document.getElementById('edit-name').value = s.name;
+            document.getElementById('edit-parent-phone').value = s.parentPhone;
+            document.getElementById('edit-group').value = s.group;
+            document.getElementById('edit-fee').value = s.fee;
+            openModal('edit-student-modal');
+        }
+
+        function handleUpdateStudent(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-id').value;
+            const idx = state.students.findIndex(x => x.id === id);
+            if (idx !== -1) {
+                state.students[idx] = {
+                    ...state.students[idx],
+                    name: document.getElementById('edit-name').value.trim(),
+                    parentPhone: document.getElementById('edit-parent-phone').value.trim(),
+                    group: document.getElementById('edit-group').value,
+                    fee: Number(document.getElementById('edit-fee').value) || 0
+                };
+                saveState();
+                refreshUI();
+                closeModal('edit-student-modal');
+                toast("تم تعديل بيانات الطالب", "success");
+            }
+        }
+
+        function deleteStudent(id) {
+            const s = state.students.find(x => x.id === id);
+            if (!s) return;
+            const box = document.createElement('div');
+            box.className = "bg-slate-900 border border-slate-700 text-white p-3.5 rounded-xl shadow-2xl text-xs flex flex-col gap-2 max-w-xs";
+            box.innerHTML = `
+                <p class="font-bold">حذف الطالب "${s.name}"؟</p>
+                <div class="flex justify-end gap-2">
+                    <button class="no px-2.5 py-1 bg-slate-800 rounded-lg">إلغاء</button>
+                    <button class="yes px-2.5 py-1 bg-rose-600 rounded-lg font-bold">حذف</button>
+                </div>
+            `;
+            document.getElementById('toast-container').appendChild(box);
+            box.querySelector('.no').onclick = () => box.remove();
+            box.querySelector('.yes').onclick = () => {
+                state.students = state.students.filter(x => x.id !== id);
+                saveState();
+                refreshUI();
+                box.remove();
+                toast("تم حذف الطالب", "info");
+            };
+        }
+
+        // ==================== STUDENT COMPREHENSIVE RECORD ====================
+        function openRecordModal(id) {
+            activeRecordStudentId = id;
+            const s = state.students.find(x => x.id === id);
+            if (!s) return;
+            const m = getMonth();
+
+            document.getElementById('record-subtitle').textContent = `${s.name} — ${s.group}`;
+            document.getElementById('rec-month-tag').textContent = formatMonthAr(m);
+
+            let p = 0, l = 0, a = 0;
+            const badges = [];
+            Object.keys(state.attendance).filter(d => d.startsWith(m)).sort().forEach(d => {
+                const st = state.attendance[d][id];
+                if (st === 'present') {
+                    p++;
+                    badges.push(`<span class="px-2 py-1 rounded bg-emerald-500/15 text-emerald-400 text-[11px] font-bold">${d} (حاضر)</span>`);
+                } else if (st === 'late') {
+                    l++;
+                    badges.push(`<span class="px-2 py-1 rounded bg-amber-500/15 text-amber-400 text-[11px] font-bold">${d} (متأخر)</span>`);
+                } else if (st === 'absent') {
+                    a++;
+                    badges.push(`<span class="px-2 py-1 rounded bg-rose-500/15 text-rose-400 text-[11px] font-bold">${d} (غائب)</span>`);
+                }
+            });
+
+            document.getElementById('rec-present').textContent = p;
+            document.getElementById('rec-late').textContent = l;
+            document.getElementById('rec-absent').textContent = a;
+            document.getElementById('rec-dates-list').innerHTML = badges.length ? badges.join('') : `<span class="text-xs text-slate-500">لا يوجد حضور مسجل لهذا الشهر</span>`;
+
+            // Load end of month student note
+            document.getElementById('rec-student-note').value = (state.studentNotes[m] && state.studentNotes[m][id]) || '';
+
+            // Exams
+            const mExams = state.exams.filter(ex => ex.month === m && (ex.group === 'ALL' || ex.group === s.group));
+            const exBox = document.getElementById('rec-exams-list');
+            if (mExams.length === 0) {
+                exBox.innerHTML = `<p class="p-3 text-center text-slate-500">لا توجد تسميعات مسجلة في هذا الشهر</p>`;
+            } else {
+                exBox.innerHTML = mExams.map(ex => {
+                    const sc = ex.scores ? ex.scores[id] : undefined;
+                    const has = sc !== undefined && sc !== '';
+                    return `
+                        <div class="flex items-center justify-between px-3.5 py-2.5">
+                            <span class="font-bold text-slate-200">${ex.title}</span>
+                            <span class="font-extrabold text-indigo-400">${has ? `${sc} / ${ex.maxScore}` : 'لم يُرصد'}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            openModal('record-modal');
+        }
+
+        function saveRecordStudentNote() {
+            if (!activeRecordStudentId) return;
+            const m = getMonth();
+            if (!state.studentNotes[m]) state.studentNotes[m] = {};
+            state.studentNotes[m][activeRecordStudentId] = document.getElementById('rec-student-note').value.trim();
+            saveState();
+            renderMonthlyTable();
+            toast("تم حفظ ملاحظة الطالب بنجاح", "success");
+        }
+
+        // ==================== WHATSAPP BOT ====================
+        function buildWhatsAppMessage(s) {
+            const id = s.id;
+            const m = getMonth();
+            const isPaid = !!(state.subscriptions[m] && state.subscriptions[m][id]);
+
+            let p = 0, l = 0, a = 0;
+            Object.keys(state.attendance).forEach(d => {
+                if (d.startsWith(m)) {
+                    const st = state.attendance[d][id];
+                    if (st === 'present') p++;
+                    else if (st === 'late') l++;
+                    else if (st === 'absent') a++;
+                }
+            });
+
+            const mExams = state.exams.filter(ex => ex.month === m && (ex.group === 'ALL' || ex.group === s.group));
+            let examsLines = "لا توجد تسميعات مسجلة هذا الشهر";
+            if (mExams.length > 0) {
+                examsLines = mExams.map(ex => {
+                    const sc = ex.scores ? ex.scores[id] : undefined;
+                    return (sc !== undefined && sc !== '')
+                        ? `• ${ex.title}: *${sc} / ${ex.maxScore}*`
+                        : `• ${ex.title}: لم يُرصد`;
+                }).join('\n');
+            }
+
+            const sNote = (state.studentNotes[m] && state.studentNotes[m][id]) || "";
+            const gNote = state.generalNotes[`${m}_${s.group}`] || state.generalNotes[`${m}_ALL`] || "";
+            let notesBlock = "";
+            if (sNote) notesBlock += `\n📌 *ملاحظات نهاية الشهر للطالب:*\n${sNote}\n`;
+            if (gNote) notesBlock += `\n📢 *ملاحظات عامة للمجموعة:*\n${gNote}\n`;
+
+            return state.waTemplate
+                .replace(/{student}/g, s.name)
+                .replace(/{group}/g, s.group)
+                .replace(/{month}/g, formatMonthAr(m))
+                .replace(/{present}/g, p)
+                .replace(/{late}/g, l)
+                .replace(/{absent}/g, a)
+                .replace(/{subscription}/g, isPaid ? `✅ تم السداد (${s.fee} ج.م)` : `❌ لم يتم السداد (${s.fee} ج.م)`)
+                .replace(/{exams}/g, examsLines)
+                .replace(/{notes}/g, notesBlock);
+        }
+
+        function openWaModal(id) {
+            const s = state.students.find(x => x.id === id);
+            if (!s) return;
+            document.getElementById('wa-name').textContent = s.name;
+            document.getElementById('wa-phone').textContent = s.parentPhone;
+            document.getElementById('wa-preview-text').value = buildWhatsAppMessage(s);
+            activeWaPhone = s.parentPhone;
+            openModal('wa-modal');
+        }
+
+        function normalizeWhatsAppPhone(rawPhone) {
+            let phone = String(rawPhone || '').replace(/\D/g, '');
+            if (phone.startsWith('00')) phone = phone.slice(2);
+            if (phone.startsWith('01') && phone.length === 11) phone = '2' + phone;
+            else if (phone.startsWith('1') && phone.length === 10) phone = '20' + phone;
+            return /^\d{10,15}$/.test(phone) ? phone : '';
+        }
+
+        function openBulkWaModal() {
+            bulkWaQueue = [];
+            bulkWaIndex = 0;
+            bulkWaOpened = 0;
+            bulkWaSkipped = 0;
+            bulkWaInvalidCount = 0;
+
+            state.students.forEach(student => {
+                const phone = normalizeWhatsAppPhone(student.parentPhone);
+                if (!phone) {
+                    bulkWaInvalidCount++;
+                    return;
+                }
+                bulkWaQueue.push({
+                    name: student.name,
+                    phone,
+                    message: buildWhatsAppMessage(student)
+                });
+            });
+
+            if (bulkWaQueue.length === 0) {
+                toast("لا يوجد طلاب بأرقام واتساب صالحة لإرسال التقارير", "error");
+                return;
+            }
+
+            renderBulkWaCurrent();
+            openModal('wa-bulk-modal');
+        }
+
+        function renderBulkWaCurrent() {
+            const status = document.getElementById('wa-bulk-status');
+            const current = document.getElementById('wa-bulk-current');
+            const preview = document.getElementById('wa-bulk-preview');
+            const openButton = document.getElementById('wa-bulk-open-btn');
+            const skipButton = document.getElementById('wa-bulk-skip-btn');
+            const remaining = bulkWaQueue.length - bulkWaIndex;
+
+            if (remaining === 0) {
+                status.textContent = `انتهى تجهيز التقارير: تم فتح ${bulkWaOpened} محادثة وتخطي ${bulkWaSkipped} طالب. تأكد من إرسال الرسائل داخل واتساب.${bulkWaInvalidCount ? ` تعذر تجهيز ${bulkWaInvalidCount} رقم غير صالح.` : ''}`;
+                current.textContent = "اكتملت قائمة الإرسال.";
+                preview.value = '';
+                openButton.classList.add('hidden');
+                skipButton.classList.add('hidden');
+                return;
+            }
+
+            const student = bulkWaQueue[bulkWaIndex];
+            status.textContent = `الطالب ${bulkWaIndex + 1} من ${bulkWaQueue.length} — تم فتح ${bulkWaOpened} محادثة وتخطي ${bulkWaSkipped}.${bulkWaInvalidCount ? ` أرقام غير صالحة: ${bulkWaInvalidCount}.` : ''}`;
+            current.textContent = `الطالب: ${student.name} — رقم ولي الأمر: ${student.phone}`;
+            preview.value = student.message;
+            openButton.classList.remove('hidden');
+            skipButton.classList.remove('hidden');
+        }
+
+        function openNextBulkWhatsApp() {
+            if (bulkWaIndex >= bulkWaQueue.length) return;
+            const student = bulkWaQueue[bulkWaIndex];
+            const message = document.getElementById('wa-bulk-preview').value;
+            const chatWindow = window.open(`https://wa.me/${student.phone}?text=${encodeURIComponent(message)}`, '_blank');
+            if (!chatWindow) {
+                toast("تعذر فتح واتساب؛ اسمح بالنوافذ المنبثقة ثم أعد المحاولة", "error");
+                return;
+            }
+            bulkWaOpened++;
+            bulkWaIndex++;
+            renderBulkWaCurrent();
+        }
+
+        function skipBulkWhatsApp() {
+            if (bulkWaIndex >= bulkWaQueue.length) return;
+            bulkWaSkipped++;
+            bulkWaIndex++;
+            renderBulkWaCurrent();
+        }
+
+        function sendWhatsAppNow() {
+            const text = document.getElementById('wa-preview-text').value;
+            const phone = normalizeWhatsAppPhone(activeWaPhone);
+            if (!phone) {
+                toast("رقم واتساب ولي الأمر غير صالح", "error");
+                return;
+            }
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+        }
+
+        function copyWaMessage() {
+            const el = document.getElementById('wa-preview-text');
+            el.select();
+            document.execCommand('copy');
+            toast("تم نسخ الرسالة", "success");
+        }
+
+        function openTemplateModal() {
+            document.getElementById('wa-template-input').value = state.waTemplate;
+            openModal('template-modal');
+        }
+
+        function saveWaTemplate() {
+            state.waTemplate = document.getElementById('wa-template-input').value;
+            saveState();
+            closeModal('template-modal');
+            toast("تم حفظ قالب الواتساب", "success");
+        }
+
+        function resetWaTemplate() {
+            state.waTemplate = DEFAULT_WA_TEMPLATE;
+            document.getElementById('wa-template-input').value = DEFAULT_WA_TEMPLATE;
+            saveState();
+            toast("تمت استعادة القالب الافتراضي", "info");
+        }
+
+        // ==================== EXAMS & RECITATIONS ====================
+        function handleCreateExam(e) {
+            e.preventDefault();
+            const title = document.getElementById('exam-title').value.trim();
+            const group = document.getElementById('exam-group').value;
+            const maxScore = Number(document.getElementById('exam-max').value) || 20;
+            const month = getMonth();
+
+            const exam = {
+                id: 'ex_' + Date.now(),
+                title,
+                group,
+                maxScore,
+                month,
+                scores: {}
+            };
+            state.exams.unshift(exam);
+            saveState();
+            document.getElementById('exam-title').value = '';
+            populateExamSelect(exam.id);
+            renderExamTable();
+            toast("تم إنشاء التسميع / الامتحان", "success");
+        }
+
+        function populateExamSelect(selectId = null) {
+            const sel = document.getElementById('active-exam-select');
+            const delBtn = document.getElementById('btn-delete-exam');
+            const m = getMonth();
+            const list = state.exams.filter(ex => ex.month === m);
+
+            if (list.length === 0) {
+                sel.innerHTML = `<option value="">لا توجد تسميعات في شهر ${formatMonthAr(m)}</option>`;
+                delBtn.classList.add('hidden');
+                return;
+            }
+
+            sel.innerHTML = list.map(ex => `<option value="${ex.id}">${ex.title} (${ex.group === 'ALL' ? 'الكل' : ex.group} - من ${ex.maxScore})</option>`).join('');
+            if (selectId && list.some(x => x.id === selectId)) sel.value = selectId;
+            delBtn.classList.remove('hidden');
+            delBtn.classList.add('flex');
+        }
+
+        function renderExamTable() {
+            const examId = document.getElementById('active-exam-select').value;
+            const tbody = document.getElementById('exam-table-body');
+
+            if (!examId) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-slate-500 text-xs">أنشئ تسميعاً أو امتحاناً جديداً للبدء في رصد الدرجات</td></tr>`;
+                return;
+            }
+
+            const exam = state.exams.find(x => x.id === examId);
+            if (!exam) return;
+
+            const students = state.students.filter(s => exam.group === 'ALL' || s.group === exam.group);
+            if (students.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-500 text-xs">لا يوجد طلاب في هذه المجموعة</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = students.map((s, idx) => {
+                const val = exam.scores && exam.scores[s.id] !== undefined ? exam.scores[s.id] : '';
+                const has = val !== '';
+                const pct = has ? Math.round((Number(val) / Number(exam.maxScore)) * 100) : 0;
+                const badge = has
+                    ? (pct >= 85 ? `<span class="text-emerald-400 font-bold">${pct}% (ممتاز)</span>` :
+                       pct >= 65 ? `<span class="text-sky-400 font-bold">${pct}% (جيد جداً)</span>` :
+                       pct >= 50 ? `<span class="text-amber-400 font-bold">${pct}% (مقبول)</span>` :
+                                   `<span class="text-rose-400 font-bold">${pct}% (ضعيف)</span>`)
+                    : `<span class="text-slate-600">-</span>`;
+
+                return `
+                    <tr class="hover:bg-slate-900/60">
+                        <td class="py-3 px-4 font-bold text-slate-500">${idx + 1}</td>
+                        <td class="py-3 px-4 font-extrabold text-white">${s.name}</td>
+                        <td class="py-3 px-4 text-xs text-indigo-300 font-bold">${s.group}</td>
+                        <td class="py-3 px-4">
+                            <div class="flex items-center gap-1.5">
+                                <input type="number" step="0.5" min="0" max="${exam.maxScore}" value="${val}"
+                                    onchange="saveScore('${exam.id}', '${s.id}', this.value)"
+                                    placeholder="الدرجة"
+                                    class="w-24 px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-center text-sm font-bold text-white focus:outline-none focus:border-indigo-500">
+                                <span class="text-xs text-slate-400">/ ${exam.maxScore}</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 text-xs">${badge}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function saveScore(examId, studentId, val) {
+            const exam = state.exams.find(x => x.id === examId);
+            if (!exam) return;
+            if (!exam.scores) exam.scores = {};
+            if (val === '') delete exam.scores[studentId];
+            else exam.scores[studentId] = Math.min(exam.maxScore, Math.max(0, Number(val)));
+            saveState();
+            renderExamTable();
+            renderMonthlyTable();
+        }
+
+        function deleteCurrentExam() {
+            const examId = document.getElementById('active-exam-select').value;
+            if (!examId) return;
+            state.exams = state.exams.filter(x => x.id !== examId);
+            saveState();
+            populateExamSelect();
+            renderExamTable();
+            renderMonthlyTable();
+            toast("تم حذف الامتحان", "info");
+        }
+
+        // ==================== BACKUP ====================
+        function exportBackup() {
+            const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `System_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            toast("تم تصدير النسخة الاحتياطية", "success");
+        }
+
+        function importBackup(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    if (data && Array.isArray(data.students)) {
+                        state = {
+                            ...state,
+                            ...data,
+                            students: Array.isArray(data.students) ? data.students : [],
+                            attendance: data.attendance && typeof data.attendance === 'object' ? data.attendance : {},
+                            subscriptions: data.subscriptions && typeof data.subscriptions === 'object' ? data.subscriptions : {},
+                            exams: Array.isArray(data.exams) ? data.exams : [],
+                            customGroups: Array.isArray(data.customGroups) ? data.customGroups : [],
+                            studentNotes: data.studentNotes && typeof data.studentNotes === 'object' ? data.studentNotes : {},
+                        generalNotes: data.generalNotes && typeof data.generalNotes === 'object' ? data.generalNotes : {},
+                        waTemplate: data.waTemplate || DEFAULT_WA_TEMPLATE,
+                        auth: data.auth && data.auth.username && data.auth.password ? data.auth : state.auth
+                    };
+                    saveState();
+                    updateHeaderTeacherName();
+                    populateGroupSelects();
+                    refreshUI();
+                    toast("تم استيراد البيانات بنجاح", "success");
+                    } else {
+                        toast("ملف غير صالح", "error");
+                    }
+                } catch (err) {
+                    toast("ملف غير صالح", "error");
+                }
+                e.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        // ==================== UI HELPERS ====================
+        function switchTab(tab) {
+            const mView = document.getElementById('view-monthly');
+            const eView = document.getElementById('view-exams');
+            const mBtn = document.getElementById('btn-tab-monthly');
+            const eBtn = document.getElementById('btn-tab-exams');
+
+            if (tab === 'monthly') {
+                mView.classList.remove('hidden');
+                eView.classList.add('hidden');
+                mBtn.className = "px-5 py-4 text-sm font-extrabold text-indigo-400 border-b-2 border-indigo-500 bg-indigo-500/5 whitespace-nowrap flex items-center gap-2 transition";
+                eBtn.className = "px-5 py-4 text-sm font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent whitespace-nowrap flex items-center gap-2 transition";
+            } else {
+                mView.classList.add('hidden');
+                eView.classList.remove('hidden');
+                eBtn.className = "px-5 py-4 text-sm font-extrabold text-indigo-400 border-b-2 border-indigo-500 bg-indigo-500/5 whitespace-nowrap flex items-center gap-2 transition";
+                mBtn.className = "px-5 py-4 text-sm font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent whitespace-nowrap flex items-center gap-2 transition";
+                populateExamSelect();
+                renderExamTable();
+            }
+        }
+
+        function openModal(id) {
+            const el = document.getElementById(id);
+            el.classList.remove('hidden');
+            el.classList.add('flex');
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+        }
+
+        function toast(msg, type = 'info') {
+            const box = document.getElementById('toast-container');
+            const el = document.createElement('div');
+            const bg = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-rose-600' : 'bg-indigo-600';
+            el.className = `${bg} text-white px-4 py-2.5 rounded-xl shadow-lg text-xs font-bold transition-all duration-300`;
+            el.textContent = msg;
+            box.appendChild(el);
+            setTimeout(() => {
+                el.style.opacity = '0';
+                setTimeout(() => el.remove(), 300);
+            }, 2600);
+        }
+    </script>
+</body>
+</html>
